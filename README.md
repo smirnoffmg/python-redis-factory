@@ -93,6 +93,29 @@ make release-minor # Release minor version (0.1.0 -> 0.2.0)
 make release-major # Release major version (0.1.0 -> 1.0.0)
 ```
 
+## Making Releases
+
+The project supports automated releases via GitHub Actions. For detailed release instructions, see [RELEASE.md](RELEASE.md).
+
+### Quick Release Process
+
+```bash
+# 1. Ensure all tests pass
+make ci
+
+# 2. Choose release type and execute
+make release-patch  # Bug fixes
+make release-minor  # New features  
+make release-major  # Breaking changes
+
+# 3. GitHub Actions automatically:
+#    - Runs quality checks
+#    - Bumps version
+#    - Creates git tag
+#    - Publishes to PyPI
+#    - Creates GitHub release
+```
+
 ## Testing
 
 The project uses comprehensive testing with parallel execution:

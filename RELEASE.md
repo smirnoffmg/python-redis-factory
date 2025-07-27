@@ -1,137 +1,284 @@
 # Release Guide
 
-This document explains how to release new versions of `python-redis-factory` to PyPI using automatic semantic versioning with protected main branch workflow.
+This document explains how to release new versions of `python-redis-factory` to PyPI. The project supports both automated and manual release workflows.
 
-## Release Workflow
+## Quick Release Commands
 
-### Automatic Release Workflow
+```bash
+# Show current version
+make version
 
-Since the `main` branch is protected, releases are created automatically from `main` after successful merge requests from `develop`:
+# Release commands (bump version + create tag + trigger deployment)
+make release-patch  # 0.1.0 -> 0.1.1 (bug fixes)
+make release-minor  # 0.1.0 -> 0.2.0 (new features)
+make release-major  # 0.1.0 -> 1.0.0 (breaking changes)
+```
 
-1. **Develop on `develop` branch**
-   ```bash
-   git checkout develop
-   git pull origin develop
-   # Make your changes
-   git add .
-   git commit -m "feat: Add new feature"
-   git push origin develop
-   ```
+## Release Workflows
 
-2. **Create Merge Request**
-   - Go to GitHub: `develop` → `main`
-   - Ensure all CI checks pass
-   - Get required approvals
-   - Merge to `main`
+### Option 1: Automated Release (Recommended)
 
-3. **Automatic Release Process**
-   - GitHub Actions automatically detects the merge
-   - Version is automatically bumped (patch increment)
-   - Tag is automatically created and pushed
-   - Package is automatically published to PyPI
-   - GitHub release is automatically created
+The project uses GitHub Actions for automated releases. When you push to the `main` branch, it automatically:
 
-### Manual Release via GitHub Actions
+1. **Runs quality checks** (tests, linting, type checking)
+2. **Bumps version** (patch increment for merges)
+3. **Creates git tag**
+4. **Builds package**
+5. **Publishes to PyPI**
+6. **Creates GitHub release**
 
-If you need to trigger a release manually or specify a different version bump:
+#### Automated Release Process
 
-1. **Go to GitHub Actions**
+```bash
+# 1. Ensure all changes are committed and pushed to main
+git add .
+git commit -m "feat: Add new feature"
+git push origin main
+
+# 2. GitHub Actions automatically handles the rest!
+# - Runs CI checks
+# - Bumps version (patch)
+# - Creates tag
+# - Publishes to PyPI
+# - Creates release
+```
+
+### Option 2: Manual Release via GitHub Actions
+
+For more control over version bumping:
+
+1. **Go to GitHub Actions** in your repository
 2. **Select the "Release" workflow**
 3. **Click "Run workflow"**
 4. **Configure the release**:
-   - **Version**: Enter the version (e.g., `0.1.0`)
-   - **Release type**: Choose patch/minor/major
+   - **Version**: Enter the target version (e.g., `0.2.0`)
+   - **Release type**: Choose `patch`, `minor`, or `major`
 5. **Click "Run workflow"**
 
-## Version Management Commands
+### Option 3: Manual Release (Local)
+
+For complete manual control:
+
+```bash
+# 1. Run quality checks
+make ci
+
+# 2. Bump version manually
+python scripts/version.py bump minor  # or patch, major
+
+# 3. Create tag and push
+python scripts/version.py tag
+
+# 4. Build package
+make build
+
+# 5. Upload to PyPI (if needed)
+uv run pip install twine
+uv run twine upload dist/*
+```
+
+## Version Management
+
+### Current Version Location
+
+The version is managed in a single location:
+- **Source**: `src/python_redis_factory/__init__.py` (line 17)
+- **Current version**: `0.1.0`
+
+### Version Commands
 
 ```bash
 # Show current version
 python scripts/version.py current
+# or
+make version
 
-# Bump version (for manual releases)
+# Bump version types
 python scripts/version.py bump patch    # 0.1.0 -> 0.1.1
-python scripts/version.py bump minor    # 0.1.0 -> 0.2.0
+python scripts/version.py bump minor    # 0.1.0 -> 0.2.0  
 python scripts/version.py bump major    # 0.1.0 -> 1.0.0
+python scripts/version.py bump prerelease  # 0.1.0 -> 0.1.0-alpha.1
 
 # Set specific version
-python scripts/version.py set 1.2.3
+python scripts/version.py set 0.2.0
 
-# Create and push tag (commits version change and creates tag)
+# Create git tag for current version
 python scripts/version.py tag
 ```
 
-## Version Numbering
+### Semantic Versioning
 
-Follow [Semantic Versioning](https://semver.org/):
+Follow [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH):
 
-- **MAJOR.MINOR.PATCH** (e.g., `1.0.0`)
-- **Patch**: Bug fixes (0.1.0 → 0.1.1) - **Automatic on MR**
-- **Minor**: New features, backward compatible (0.1.0 → 0.2.0) - **Manual**
-- **Major**: Breaking changes (0.1.0 → 1.0.0) - **Manual**
+- **Patch** (0.1.0 → 0.1.1): Bug fixes, documentation updates
+- **Minor** (0.1.0 → 0.2.0): New features, backward compatible
+- **Major** (0.1.0 → 1.0.0): Breaking changes
 
-## PyPI Publishing
+## Pre-Release Checklist
 
-### Production PyPI
-- **Trigger**: Automatic on merge to main from develop
-- **Repository**: https://pypi.org/project/python-redis-factory/
-- **Workflow**: `.github/workflows/release.yml`
+Before making a release, ensure:
 
-## Branch Protection Workflow
+- [ ] **All tests pass**: `make test-parallel`
+- [ ] **Linting passes**: `make lint`
+- [ ] **Type checking passes**: `make type-check`
+- [ ] **Documentation is updated**: README.md, docstrings
+- [ ] **Changelog is updated** (if applicable)
+- [ ] **No breaking changes** (unless intentional major release)
 
-### Protected Main Branch
-- **Direct pushes to main**: Disabled
-- **Required status checks**: Must pass before merging
-- **Required reviews**: At least one approval
-- **Release workflow**: Triggers on pushes to main
+## Release Process Step-by-Step
 
-### Develop Branch
-- **Direct pushes**: Allowed for development
-- **CI workflow**: Runs on pushes and PRs
-- **Workflow**: Develop → MR → Main → Auto-Release
+### Step 1: Prepare for Release
 
-### Automatic Release Process
-1. **Develop** on `develop` branch
-2. **Create MR** from `develop` to `main`
-3. **Merge** after approvals and CI passes
-4. **Automatic version bump** (patch increment)
-5. **Automatic tag creation**
-6. **Automatic release** to PyPI
+```bash
+# Ensure you're on main branch
+git checkout main
+git pull origin main
 
-## Verification
+# Run full quality checks
+make ci
+```
 
-After a release:
+### Step 2: Choose Release Type
+
+**For bug fixes and minor updates:**
+```bash
+make release-patch
+```
+
+**For new features:**
+```bash
+make release-minor
+```
+
+**For breaking changes:**
+```bash
+make release-major
+```
+
+### Step 3: Verify Release
+
+After the release process completes:
 
 1. **Check PyPI**: https://pypi.org/project/python-redis-factory/
 2. **Test installation**:
    ```bash
-   pip install python-redis-factory==0.1.1
+   pip install python-redis-factory==<new-version>
    ```
 3. **Check GitHub release**: https://github.com/smirnoffmg/python-redis-factory/releases
+4. **Verify package works**:
+   ```python
+   from python_redis_factory import get_redis_client
+   # Test basic functionality
+   ```
+
+## GitHub Actions Workflow
+
+The `.github/workflows/release.yml` workflow:
+
+1. **Triggers on**: Push to `main` branch or manual workflow dispatch
+2. **Runs on**: Ubuntu latest
+3. **Steps**:
+   - Setup Python 3.12 and uv
+   - Install dependencies
+   - Run tests with coverage
+   - Upload coverage to Codecov
+   - Run linting and type checking
+   - Build package
+   - Auto-bump version and create tag (for merges)
+   - Publish to PyPI
+   - Create GitHub release
+
+## PyPI Publishing
+
+### Production PyPI
+- **URL**: https://pypi.org/project/python-redis-factory/
+- **Authentication**: GitHub Actions uses `PYPI_API_TOKEN` secret
+- **Workflow**: Automatic via GitHub Actions
+
+### Package Information
+- **Package name**: `python-redis-factory`
+- **Build system**: `hatchling`
+- **Python versions**: 3.12+
+- **Dependencies**: `redis>=6.2.0`
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Build fails**: Check GitHub Actions logs for test/lint failures
-2. **PyPI upload fails**: Verify API token is correct and has proper permissions
-3. **Version already exists**: Use `skip-existing: true` in workflow (already configured)
-4. **Tag already exists**: The version script will warn you if the tag already exists
-5. **MR blocked**: Ensure all CI checks pass and you have required approvals
-6. **Auto-version not working**: Check if the commit message contains "Merge pull request"
+**1. Build fails**
+```bash
+# Check GitHub Actions logs
+# Common causes: test failures, linting errors, type issues
+```
 
-### Manual PyPI Upload (if needed)
+**2. PyPI upload fails**
+- Verify `PYPI_API_TOKEN` secret is set in GitHub repository
+- Check token has proper permissions (upload to PyPI)
+- Ensure package name is available
+
+**3. Version already exists**
+- The workflow uses `skip-existing: true` to handle this
+- For manual uploads, use `--skip-existing` flag
+
+**4. Tag already exists**
+```bash
+# The version script will warn you
+python scripts/version.py tag
+# Error: Tag v0.1.0 already exists
+```
+
+**5. Git identity error in CI**
+```
+Author identity unknown
+*** Please tell me who you are.
+```
+- **Solution**: The workflow now configures git identity automatically
+- **If it still fails**: Check that the workflow has `contents: write` permissions
+
+**6. Tests fail locally but pass in CI**
+```bash
+# Ensure you're using the same Python version
+python --version  # Should be 3.12+
+# Check uv.lock is up to date
+uv sync
+```
+
+### Manual Recovery
+
+If automated release fails:
 
 ```bash
-# Build package
-uv build
+# 1. Check what went wrong in GitHub Actions
+# 2. Fix the issue
+# 3. Push the fix to main
+# 4. Or trigger manual workflow dispatch
 
-# Upload to Production PyPI
+# For emergency manual release:
+make ci
+python scripts/version.py bump patch
+python scripts/version.py tag
+make build
 uv run twine upload dist/*
 ```
 
-## Security
+## Security Considerations
 
-- API tokens are stored as GitHub repository secrets
-- Use different tokens for different environments
-- Rotate tokens regularly 
+- **API tokens**: Stored as GitHub repository secrets
+- **Token rotation**: Rotate PyPI tokens regularly
+- **Branch protection**: Main branch is protected
+- **Required reviews**: PRs require approval before merge
+
+## Best Practices
+
+1. **Always run tests** before releasing
+2. **Use semantic versioning** consistently
+3. **Update documentation** with new features
+4. **Test the released package** after publication
+5. **Monitor PyPI download statistics**
+6. **Keep dependencies updated**
+
+## Support
+
+- **Issues**: Create GitHub issues for bugs and feature requests
+- **Discussions**: Use GitHub Discussions for questions
+- **Contributing**: See CONTRIBUTING.md for development guidelines 
