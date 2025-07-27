@@ -79,6 +79,10 @@ make type-check
 make ci
 ```
 
+### Setup PyPI and Codecov
+
+For PyPI publishing and Codecov integration setup, see [SETUP.md](SETUP.md).
+
 ### Quick Commands
 
 ```bash
