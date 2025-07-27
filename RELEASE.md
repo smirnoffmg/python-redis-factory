@@ -93,6 +93,9 @@ python scripts/version.py current
 # or
 make version
 
+# Show version only (for scripts)
+python scripts/version.py current --version-only
+
 # Bump version types
 python scripts/version.py bump patch    # 0.1.0 -> 0.1.1
 python scripts/version.py bump minor    # 0.1.0 -> 0.2.0  

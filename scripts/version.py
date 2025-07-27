@@ -87,6 +87,7 @@ def main():
         print("Usage: python scripts/version.py <command> [args]")
         print("Commands:")
         print("  current                    - Show current version")
+        print("  current --version-only     - Show current version (version only)")
         print(
             "  bump <type>                - Bump version (major|minor|patch|prerelease)"
         )
@@ -99,7 +100,10 @@ def main():
     try:
         if command == "current":
             version = get_current_version()
-            print(f"Current version: {version}")
+            if len(sys.argv) > 2 and sys.argv[2] == "--version-only":
+                print(version)
+            else:
+                print(f"Current version: {version}")
 
         elif command == "bump":
             if len(sys.argv) < 3:
