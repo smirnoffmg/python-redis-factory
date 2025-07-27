@@ -79,12 +79,13 @@ make version  # Shows current version
 
 ### Version Commands
 ```bash
-python scripts/version.py current    # Show version
-python scripts/version.py bump patch # 0.1.0 -> 0.1.1
-python scripts/version.py bump minor # 0.1.0 -> 0.2.0
-python scripts/version.py bump major # 0.1.0 -> 1.0.0
-python scripts/version.py set 0.2.0  # Set specific version
-python scripts/version.py tag        # Create git tag
+python scripts/version.py current              # Show version
+python scripts/version.py current --version-only  # Show version only
+python scripts/version.py bump patch           # 0.1.0 -> 0.1.1
+python scripts/version.py bump minor           # 0.1.0 -> 0.2.0
+python scripts/version.py bump major           # 0.1.0 -> 1.0.0
+python scripts/version.py set 0.2.0            # Set specific version
+python scripts/version.py tag                  # Create git tag
 ```
 
 ## Troubleshooting

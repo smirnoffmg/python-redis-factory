@@ -78,7 +78,7 @@ jobs:
           echo "Detected merge from develop to main, auto-bumping version..."
           python scripts/version.py bump patch
           # Just create the tag locally, don't try to push to main
-          version=$(python scripts/version.py current)
+          version=$(python scripts/version.py current --version-only)
           tag_name="v$version"
           git tag -a "$tag_name" -m "Release $tag_name"
           echo "Created tag $tag_name"
