@@ -1,0 +1,36 @@
+# Include source code
+include src/python_redis_factory/**/*.py
+
+# Include documentation
+include README.md
+include LICENSE
+include CHANGELOG.md
+include CONTRIBUTING.md
+
+# Include configuration files
+include pyproject.toml
+include uv.lock
+
+# Include test files (for development)
+recursive-include tests *.py
+
+# Include example scripts
+include *.py
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude .pytest_cache
+global-exclude .coverage
+global-exclude htmlcov
+global-exclude .mypy_cache
+global-exclude .ruff_cache
+global-exclude .venv
+global-exclude .git
+global-exclude .gitignore
+global-exclude .DS_Store
+global-exclude *.log
+global-exclude .env
+global-exclude .env.* 

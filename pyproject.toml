@@ -1,0 +1,76 @@
+[project]
+name = "python-redis-factory"
+version = "0.1.0"
+description = "A universal Redis client factory for Python—just pass a single connection string (supporting standalone, Sentinel, or Cluster modes) and get back a ready-to-use redis.Redis instance."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [
+    { name = "Python Redis Factory Contributors", email = "contributors@python-redis-factory.dev" },
+]
+maintainers = [
+    { name = "Python Redis Factory Maintainers", email = "maintainers@python-redis-factory.dev" },
+]
+keywords = [
+    "redis",
+    "client",
+    "factory",
+    "connection",
+    "sentinel",
+    "cluster",
+    "async",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+    "Typing :: Typed",
+]
+dependencies = ["redis>=6.2.0"]
+
+[project.urls]
+Homepage = "https://github.com/smirnoffmg/python-redis-factory"
+Documentation = "https://github.com/smirnoffmg/python-redis-factory#readme"
+Repository = "https://github.com/smirnoffmg/python-redis-factory"
+"Bug Tracker" = "https://github.com/smirnoffmg/python-redis-factory/issues"
+"Changelog" = "https://github.com/smirnoffmg/python-redis-factory/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/python_redis_factory"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+# Parallel testing configuration
+# Use auto to automatically detect number of CPU cores
+# Use specific number like 4 for fixed number of workers
+# Use 0 to disable parallel execution
+addopts = "-v --strict-markers -n auto"
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (use external services)",
+    "asyncio: Async tests",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.2.1",
+    "pytest-timeout>=2.4.0",
+    "pytest-xdist>=3.6.0",
+    "ruff>=0.12.5",
+    "testcontainers[redis]>=3.7.0",
+]
