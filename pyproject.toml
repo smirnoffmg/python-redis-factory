@@ -1,16 +1,12 @@
 [project]
 name = "python-redis-factory"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A universal Redis client factory for Python—just pass a single connection string (supporting standalone, Sentinel, or Cluster modes) and get back a ready-to-use redis.Redis instance."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
-authors = [
-    { name = "Python Redis Factory Contributors", email = "contributors@python-redis-factory.dev" },
-]
-maintainers = [
-    { name = "Python Redis Factory Maintainers", email = "maintainers@python-redis-factory.dev" },
-]
+authors = [{ name = "Maksim Smirnov", email = "smirnoffmg@gmail.com" }]
+maintainers = [{ name = "Maksim Smirnov", email = "smirnoffmg@gmail.com" }]
 keywords = [
     "redis",
     "client",
@@ -45,6 +41,9 @@ Repository = "https://github.com/smirnoffmg/python-redis-factory"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/python_redis_factory/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/python_redis_factory"]

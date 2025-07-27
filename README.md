@@ -59,24 +59,34 @@ git clone <repository-url>
 cd python-redis-factory
 
 # Install dependencies
-uv sync
-
-# Run tests
-uv run pytest
+make install
 
 # Run tests in parallel (recommended)
-uv run pytest -n auto
+make test-parallel
 
 # Run specific test categories
 uv run pytest tests/unit/ -n auto      # Unit tests only
 uv run pytest tests/integration/ -n auto  # Integration tests only
 
 # Run with coverage
-uv run pytest --cov=python_redis_factory -n auto
+make test-coverage
 
 # Linting and type checking
-uv run ruff check .
-uv run mypy src/
+make lint
+make type-check
+
+# Run full CI checks
+make ci
+```
+
+### Quick Commands
+
+```bash
+make help          # Show all available commands
+make version       # Show current version
+make release-patch # Release patch version (0.1.0 -> 0.1.1)
+make release-minor # Release minor version (0.1.0 -> 0.2.0)
+make release-major # Release major version (0.1.0 -> 1.0.0)
 ```
 
 ## Testing
