@@ -71,10 +71,32 @@ jobs:
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Auto-bump version and create tag
+    - name: Bump version and create tag
       run: |
+        # Check if this is a manual workflow dispatch
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "Manual workflow dispatch detected"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Release type: ${{ github.event.inputs.release_type }}"
+          
+          # Set the specific version if provided
+          if [ "${{ github.event.inputs.version }}" != "0.1.0" ]; then
+            echo "Setting version to ${{ github.event.inputs.version }}"
+            python scripts/version.py set "${{ github.event.inputs.version }}"
+          else
+            # Bump version based on release type
+            echo "Bumping version with type: ${{ github.event.inputs.release_type }}"
+            python scripts/version.py bump "${{ github.event.inputs.release_type }}"
+          fi
+          
+          # Create tag
+          version=$(python scripts/version.py current --version-only)
+          tag_name="v$version"
+          git tag -a "$tag_name" -m "Release $tag_name"
+          echo "Created tag $tag_name"
+          
         # Check if this is a merge from develop to main
-        if git log --oneline -1 | grep -q "Merge pull request"; then
+        elif git log --oneline -1 | grep -q "Merge pull request"; then
           echo "Detected merge from develop to main, auto-bumping version..."
           python scripts/version.py bump patch
           # Just create the tag locally, don't try to push to main
@@ -83,7 +105,7 @@ jobs:
           git tag -a "$tag_name" -m "Release $tag_name"
           echo "Created tag $tag_name"
         else
-          echo "Not a merge from develop, skipping auto-version bump"
+          echo "Not a merge from develop or manual dispatch, skipping auto-version bump"
         fi
       env:
         CI: true

@@ -51,9 +51,11 @@ For more control over version bumping:
 2. **Select the "Release" workflow**
 3. **Click "Run workflow"**
 4. **Configure the release**:
-   - **Version**: Enter the target version (e.g., `0.2.0`)
-   - **Release type**: Choose `patch`, `minor`, or `major`
+   - **Version**: Enter the target version (e.g., `0.2.0`) or leave as `0.1.0` to auto-bump
+   - **Release type**: Choose `patch`, `minor`, or `major` (used when version is `0.1.0`)
 5. **Click "Run workflow"**
+
+**Note**: If you enter a specific version (not `0.1.0`), it will set that exact version. If you leave it as `0.1.0`, it will bump the current version based on the release type.
 
 ### Option 3: Manual Release (Local)
 
