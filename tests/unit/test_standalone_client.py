@@ -113,7 +113,8 @@ class TestStandaloneRedisClient:
     def test_validate_config_wrong_mode(self):
         """Test that client rejects configuration with wrong mode."""
         config = RedisConnectionConfig(
-            host="localhost", mode=RedisConnectionMode.SENTINEL  # Wrong mode
+            host="localhost",
+            mode=RedisConnectionMode.SENTINEL,  # Wrong mode
         )
 
         with pytest.raises(

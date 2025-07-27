@@ -188,7 +188,9 @@ class TestConfigurationManagement:
     def test_validate_config_ssl_without_cert_reqs(self):
         """Test validating SSL config without proper SSL settings."""
         config = RedisConnectionConfig(
-            host="localhost", ssl=True, ssl_cert_reqs=None  # Should be set for SSL
+            host="localhost",
+            ssl=True,
+            ssl_cert_reqs=None,  # Should be set for SSL
         )
 
         with pytest.raises(

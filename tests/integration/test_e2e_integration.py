@@ -360,9 +360,9 @@ class TestE2EIntegration:
             thread.join()
 
         # Check results
-        assert (
-            errors.empty()
-        ), f"Errors occurred: {[errors.get() for _ in range(errors.qsize())]}"
+        assert errors.empty(), (
+            f"Errors occurred: {[errors.get() for _ in range(errors.qsize())]}"
+        )
 
         # All operations should have succeeded
         success_count = 0
@@ -370,6 +370,6 @@ class TestE2EIntegration:
             if results.get():
                 success_count += 1
 
-        assert (
-            success_count == 500
-        ), f"Expected 500 successful operations, got {success_count}"
+        assert success_count == 500, (
+            f"Expected 500 successful operations, got {success_count}"
+        )
