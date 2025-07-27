@@ -19,6 +19,10 @@ on:
           - minor
           - major
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -28,6 +32,7 @@ jobs:
       with:
         fetch-depth: 0  # Required for version detection
         token: ${{ secrets.GITHUB_TOKEN }}
+        persist-credentials: true
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v4
@@ -61,16 +66,27 @@ jobs:
     - name: Build package
       run: uv build
 
+    - name: Configure Git
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
     - name: Auto-bump version and create tag
       run: |
         # Check if this is a merge from develop to main
         if git log --oneline -1 | grep -q "Merge pull request"; then
           echo "Detected merge from develop to main, auto-bumping version..."
           python scripts/version.py bump patch
-          python scripts/version.py tag
+          # Just create the tag locally, don't try to push to main
+          version=$(python scripts/version.py current)
+          tag_name="v$version"
+          git tag -a "$tag_name" -m "Release $tag_name"
+          echo "Created tag $tag_name"
         else
           echo "Not a merge from develop, skipping auto-version bump"
         fi
+      env:
+        CI: true
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1

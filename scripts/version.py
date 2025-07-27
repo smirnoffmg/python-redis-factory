@@ -123,6 +123,7 @@ def main():
 
         elif command == "tag":
             version = get_current_version()
+            import os
             import subprocess
 
             tag_name = f"v{version}"
@@ -145,9 +146,22 @@ def main():
             subprocess.run(
                 ["git", "tag", "-a", tag_name, "-m", f"Release {tag_name}"], check=True
             )
-            subprocess.run(["git", "push", "origin", "main"], check=True)
-            subprocess.run(["git", "push", "origin", tag_name], check=True)
-            print(f"Created and pushed tag {tag_name}")
+
+            # In CI environment, we might not be able to push to main branch
+            # but we can still create the tag locally for the release
+            if os.environ.get("CI"):
+                print(f"Created tag {tag_name} in CI environment")
+                # Try to push tag, but don't fail if we can't push to main
+                try:
+                    subprocess.run(["git", "push", "origin", tag_name], check=True)
+                    print(f"Pushed tag {tag_name} to remote")
+                except subprocess.CalledProcessError:
+                    print(f"Warning: Could not push tag {tag_name} to remote")
+            else:
+                # Local development - push both commit and tag
+                subprocess.run(["git", "push", "origin", "main"], check=True)
+                subprocess.run(["git", "push", "origin", tag_name], check=True)
+                print(f"Created and pushed tag {tag_name}")
 
         else:
             print(f"Unknown command: {command}")
