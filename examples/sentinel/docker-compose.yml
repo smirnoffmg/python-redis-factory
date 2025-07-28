@@ -1,0 +1,157 @@
+# Redis Sentinel Setup
+# Simple Redis Sentinel configuration with master, replicas, and sentinels
+
+services:
+  redis-master:
+    image: redis:7.2-alpine
+    container_name: redis-master
+    hostname: redis-master
+
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--repl-diskless-load",
+        "on-empty-db",
+        "--protected-mode",
+        "no"
+      ]
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-replica-1:
+    image: redis:7.2-alpine
+    container_name: redis-replica-1
+    hostname: redis-replica-1
+
+    depends_on:
+      - redis-master
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--replicaof",
+        "redis-master",
+        "6379",
+        "--repl-diskless-load",
+        "on-empty-db",
+        "--protected-mode",
+        "no"
+      ]
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-replica-2:
+    image: redis:7.2-alpine
+    container_name: redis-replica-2
+    hostname: redis-replica-2
+
+    depends_on:
+      - redis-master
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--replicaof",
+        "redis-master",
+        "6379",
+        "--repl-diskless-load",
+        "on-empty-db",
+        "--protected-mode",
+        "no"
+      ]
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-sentinel-1:
+    image: redis:7.2-alpine
+    container_name: redis-sentinel-1
+    hostname: redis-sentinel-1
+
+    depends_on:
+      - redis-master
+    command: >
+      sh -c 'echo "bind 0.0.0.0" > /etc/sentinel.conf &&
+            echo "sentinel monitor mymaster redis-master 6379 2" >> /etc/sentinel.conf &&
+            echo "sentinel resolve-hostnames yes" >> /etc/sentinel.conf &&
+            echo "sentinel down-after-milliseconds mymaster 1000" >> /etc/sentinel.conf &&
+            echo "sentinel failover-timeout mymaster 5000" >> /etc/sentinel.conf &&
+            echo "sentinel parallel-syncs mymaster 1" >> /etc/sentinel.conf &&
+            redis-server /etc/sentinel.conf --sentinel --port 26379'
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-sentinel-2:
+    image: redis:7.2-alpine
+    container_name: redis-sentinel-2
+    hostname: redis-sentinel-2
+
+    depends_on:
+      - redis-master
+    command: >
+      sh -c 'echo "bind 0.0.0.0" > /etc/sentinel.conf &&
+            echo "sentinel monitor mymaster redis-master 6379 2" >> /etc/sentinel.conf &&
+            echo "sentinel resolve-hostnames yes" >> /etc/sentinel.conf &&
+            echo "sentinel down-after-milliseconds mymaster 1000" >> /etc/sentinel.conf &&
+            echo "sentinel failover-timeout mymaster 5000" >> /etc/sentinel.conf &&
+            echo "sentinel parallel-syncs mymaster 1" >> /etc/sentinel.conf &&
+            redis-server /etc/sentinel.conf --sentinel --port 26379'
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-sentinel-3:
+    image: redis:7.2-alpine
+    container_name: redis-sentinel-3
+    hostname: redis-sentinel-3
+
+    depends_on:
+      - redis-master
+    command: >
+      sh -c 'echo "bind 0.0.0.0" > /etc/sentinel.conf &&
+            echo "sentinel monitor mymaster redis-master 6379 2" >> /etc/sentinel.conf &&
+            echo "sentinel resolve-hostnames yes" >> /etc/sentinel.conf &&
+            echo "sentinel down-after-milliseconds mymaster 1000" >> /etc/sentinel.conf &&
+            echo "sentinel failover-timeout mymaster 5000" >> /etc/sentinel.conf &&
+            echo "sentinel parallel-syncs mymaster 1" >> /etc/sentinel.conf &&
+            redis-server /etc/sentinel.conf --sentinel --port 26379'
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+
+
+networks:
+  redis-net:
+    driver: bridge 

@@ -275,19 +275,23 @@ class TestAsyncClusterRedisClient:
             ssl_cert_reqs="required",
         )
 
-        with patch("redis.asyncio.Redis") as mock_redis:
+        with patch("redis.asyncio.RedisCluster") as mock_redis_cluster:
             mock_instance = AsyncMock()
-            mock_redis.return_value = mock_instance
+            mock_redis_cluster.return_value = mock_instance
 
             client = ClusterRedisClient(config, async_client=True)
             client.create_connection()
 
-            # Verify Redis was called with correct parameters
-            mock_redis.assert_called_once()
-            call_args = mock_redis.call_args[1]
+            # Verify RedisCluster was called with correct parameters
+            mock_redis_cluster.assert_called_once()
+            call_args = mock_redis_cluster.call_args[1]
 
-            assert call_args["host"] == "localhost"
-            assert call_args["port"] == 7000
+            assert "startup_nodes" in call_args
+            assert len(call_args["startup_nodes"]) == 2
+            assert call_args["startup_nodes"][0].host == "node1"
+            assert call_args["startup_nodes"][0].port == 7000
+            assert call_args["startup_nodes"][1].host == "node2"
+            assert call_args["startup_nodes"][1].port == 7001
             assert call_args["password"] == "secret"
             assert call_args["ssl"] is True
             assert call_args["ssl_cert_reqs"] == "required"
@@ -329,12 +333,12 @@ class TestAsyncClusterRedisClient:
             cluster_nodes=["node1:7000", "node2:7001"],
         )
 
-        with patch("redis.asyncio.Redis") as mock_redis:
+        with patch("redis.asyncio.RedisCluster") as mock_redis_cluster:
             mock_instance = AsyncMock()
             mock_instance.ping.return_value = True
             mock_instance.set.return_value = True
             mock_instance.get.return_value = "test_value"
-            mock_redis.return_value = mock_instance
+            mock_redis_cluster.return_value = mock_instance
 
             client = ClusterRedisClient(config, async_client=True)
             redis_client = client.create_connection()

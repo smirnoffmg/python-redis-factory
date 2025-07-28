@@ -39,19 +39,23 @@ class TestClusterRedisClient:
             ssl_cert_reqs="required",
         )
 
-        with patch("redis.Redis") as mock_redis:
+        with patch("redis.RedisCluster") as mock_redis_cluster:
             mock_instance = Mock()
-            mock_redis.return_value = mock_instance
+            mock_redis_cluster.return_value = mock_instance
 
             client = ClusterRedisClient(config)
             client.create_connection()
 
-            # Verify Redis was called with correct parameters
-            mock_redis.assert_called_once()
-            call_args = mock_redis.call_args[1]
+            # Verify RedisCluster was called with correct parameters
+            mock_redis_cluster.assert_called_once()
+            call_args = mock_redis_cluster.call_args[1]
 
-            assert call_args["host"] == "localhost"
-            assert call_args["port"] == 7000
+            assert "startup_nodes" in call_args
+            assert len(call_args["startup_nodes"]) == 2
+            assert call_args["startup_nodes"][0].host == "node1"
+            assert call_args["startup_nodes"][0].port == 7000
+            assert call_args["startup_nodes"][1].host == "node2"
+            assert call_args["startup_nodes"][1].port == 7001
             assert call_args["password"] == "secret"
             assert call_args["ssl"] is True
             assert call_args["ssl_cert_reqs"] == "required"
@@ -68,15 +72,15 @@ class TestClusterRedisClient:
             ssl_cert_reqs="required",
         )
 
-        with patch("redis.Redis") as mock_redis:
+        with patch("redis.RedisCluster") as mock_redis_cluster:
             mock_instance = Mock()
-            mock_redis.return_value = mock_instance
+            mock_redis_cluster.return_value = mock_instance
 
             client = ClusterRedisClient(config)
             client.create_connection()
 
             # Verify SSL parameters were passed
-            call_args = mock_redis.call_args[1]
+            call_args = mock_redis_cluster.call_args[1]
             assert call_args["ssl"] is True
             assert call_args["ssl_cert_reqs"] == "required"
 
@@ -89,17 +93,18 @@ class TestClusterRedisClient:
             cluster_nodes=["node1:7000", "node2:7001"],
         )
 
-        with patch("redis.Redis") as mock_redis:
+        with patch("redis.RedisCluster") as mock_redis_cluster:
             mock_instance = Mock()
-            mock_redis.return_value = mock_instance
+            mock_redis_cluster.return_value = mock_instance
 
             client = ClusterRedisClient(config)
             client.create_connection()
 
             # Verify default values were used
-            call_args = mock_redis.call_args[1]
+            call_args = mock_redis_cluster.call_args[1]
             assert call_args["ssl"] is False
             assert call_args["decode_responses"] is True
+            assert "startup_nodes" in call_args
 
     def test_validate_config_wrong_mode(self):
         """Test that client rejects configuration with wrong mode."""
@@ -150,12 +155,12 @@ class TestClusterRedisClient:
             cluster_nodes=["node1:7000", "node2:7001"],
         )
 
-        with patch("redis.Redis") as mock_redis:
+        with patch("redis.RedisCluster") as mock_redis_cluster:
             mock_instance = Mock()
             mock_instance.ping.return_value = True
             mock_instance.set.return_value = True
             mock_instance.get.return_value = "test_value"
-            mock_redis.return_value = mock_instance
+            mock_redis_cluster.return_value = mock_instance
 
             client = ClusterRedisClient(config)
             redis_client = client.create_connection()
@@ -174,8 +179,8 @@ class TestClusterRedisClient:
             cluster_nodes=["node1:7000", "node2:7001"],
         )
 
-        with patch("redis.Redis") as mock_redis:
-            mock_redis.side_effect = Exception("Connection failed")
+        with patch("redis.RedisCluster") as mock_redis_cluster:
+            mock_redis_cluster.side_effect = Exception("Connection failed")
 
             client = ClusterRedisClient(config)
 
@@ -205,14 +210,51 @@ class TestClusterRedisClient:
             cluster_nodes=["node1:7000", "node2:7001", "node3:7002"],
         )
 
-        with patch("redis.Redis") as mock_redis:
+        with patch("redis.RedisCluster") as mock_redis_cluster:
             mock_instance = Mock()
-            mock_redis.return_value = mock_instance
+            mock_redis_cluster.return_value = mock_instance
 
             client = ClusterRedisClient(config)
             client.create_connection()
 
-            # Verify cluster nodes were passed correctly
-            # Note: The actual Redis client might handle cluster nodes differently
-            # This test verifies our configuration is correct
-            assert config.cluster_nodes == ["node1:7000", "node2:7001", "node3:7002"]
+            # Verify cluster nodes were parsed correctly
+            call_args = mock_redis_cluster.call_args[1]
+            startup_nodes = call_args["startup_nodes"]
+            assert len(startup_nodes) == 3
+            # Check that ClusterNode objects were created with correct host/port
+            assert startup_nodes[0].host == "node1"
+            assert startup_nodes[0].port == 7000
+            assert startup_nodes[1].host == "node2"
+            assert startup_nodes[1].port == 7001
+            assert startup_nodes[2].host == "node3"
+            assert startup_nodes[2].port == 7002
+
+    def test_create_async_cluster_connection(self):
+        """Test that async Cluster connection is created with correct parameters."""
+        config = RedisConnectionConfig(
+            host="localhost",
+            port=7000,
+            password="secret",
+            mode=RedisConnectionMode.CLUSTER,
+            cluster_nodes=["node1:7000", "node2:7001"],
+        )
+
+        with patch("redis.asyncio.RedisCluster") as mock_redis_cluster:
+            mock_instance = Mock()
+            mock_redis_cluster.return_value = mock_instance
+
+            client = ClusterRedisClient(config, async_client=True)
+            client.create_connection()
+
+            # Verify async RedisCluster was called with correct parameters
+            mock_redis_cluster.assert_called_once()
+            call_args = mock_redis_cluster.call_args[1]
+
+            assert "startup_nodes" in call_args
+            assert len(call_args["startup_nodes"]) == 2
+            assert call_args["startup_nodes"][0].host == "node1"
+            assert call_args["startup_nodes"][0].port == 7000
+            assert call_args["startup_nodes"][1].host == "node2"
+            assert call_args["startup_nodes"][1].port == 7001
+            assert call_args["password"] == "secret"
+            assert call_args["decode_responses"] is True

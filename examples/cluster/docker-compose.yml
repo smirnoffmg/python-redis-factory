@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  redis-cluster-1:
+    image: redis:7.2-alpine
+    container_name: redis-cluster-1
+    ports:
+      - "7001:6379"
+      - "17001:16379"
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --requirepass redis123 --masterauth redis123 --cluster-announce-ip redis-cluster-1 --cluster-announce-port 6379
+    volumes:
+      - redis-cluster-1-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis123", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-cluster-2:
+    image: redis:7.2-alpine
+    container_name: redis-cluster-2
+    ports:
+      - "7002:6379"
+      - "17002:16379"
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --requirepass redis123 --masterauth redis123 --cluster-announce-ip redis-cluster-2 --cluster-announce-port 6379
+    volumes:
+      - redis-cluster-2-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis123", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-cluster-3:
+    image: redis:7.2-alpine
+    container_name: redis-cluster-3
+    ports:
+      - "7003:6379"
+      - "17003:16379"
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --requirepass redis123 --masterauth redis123 --cluster-announce-ip redis-cluster-3 --cluster-announce-port 6379
+    volumes:
+      - redis-cluster-3-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis123", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-cluster-4:
+    image: redis:7.2-alpine
+    container_name: redis-cluster-4
+    ports:
+      - "7004:6379"
+      - "17004:16379"
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --requirepass redis123 --masterauth redis123 --cluster-announce-ip redis-cluster-4 --cluster-announce-port 6379
+    volumes:
+      - redis-cluster-4-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis123", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-cluster-5:
+    image: redis:7.2-alpine
+    container_name: redis-cluster-5
+    ports:
+      - "7005:6379"
+      - "17005:16379"
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --requirepass redis123 --masterauth redis123 --cluster-announce-ip redis-cluster-5 --cluster-announce-port 6379
+    volumes:
+      - redis-cluster-5-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis123", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-cluster-6:
+    image: redis:7.2-alpine
+    container_name: redis-cluster-6
+    ports:
+      - "7006:6379"
+      - "17006:16379"
+    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --requirepass redis123 --masterauth redis123 --cluster-announce-ip redis-cluster-6 --cluster-announce-port 6379
+    volumes:
+      - redis-cluster-6-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis123", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis-cluster-init:
+    image: redis:7.2-alpine
+    container_name: redis-cluster-init
+    depends_on:
+      redis-cluster-1:
+        condition: service_healthy
+      redis-cluster-2:
+        condition: service_healthy
+      redis-cluster-3:
+        condition: service_healthy
+      redis-cluster-4:
+        condition: service_healthy
+      redis-cluster-5:
+        condition: service_healthy
+      redis-cluster-6:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'All nodes are healthy. Creating Redis cluster...'
+        redis-cli --cluster create redis-cluster-1:6379 redis-cluster-2:6379 redis-cluster-3:6379 redis-cluster-4:6379 redis-cluster-5:6379 redis-cluster-6:6379 --cluster-replicas 1 --cluster-yes -a redis123
+        echo 'Redis cluster created successfully!'
+        sleep 5
+      "
+    restart: "no"
+
+volumes:
+  redis-cluster-1-data:
+  redis-cluster-2-data:
+  redis-cluster-3-data:
+  redis-cluster-4-data:
+  redis-cluster-5-data:
+  redis-cluster-6-data: 
