@@ -15,7 +15,7 @@ from .interfaces import RedisConnectionConfig, RedisConnectionMode
 from .simple_api import get_redis_client
 from .uri_parser import parse_redis_uri
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 __all__ = [
     "RedisConnectionConfig",
     "RedisConnectionMode",
