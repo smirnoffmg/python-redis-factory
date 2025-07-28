@@ -89,24 +89,46 @@ jobs:
             python scripts/version.py bump "${{ github.event.inputs.release_type }}"
           fi
           
+          # Commit version change
+          git add src/python_redis_factory/__init__.py
+          git commit -m "chore: Bump version to $(python scripts/version.py current --version-only)"
+          
           # Create tag
           version=$(python scripts/version.py current --version-only)
           tag_name="v$version"
           git tag -a "$tag_name" -m "Release $tag_name"
           echo "Created tag $tag_name"
+          echo "TAG_CREATED=true" >> $GITHUB_ENV
           
         # Check if this is a merge from develop to main
         elif git log --oneline -1 | grep -q "Merge pull request"; then
           echo "Detected merge from develop to main, auto-bumping version..."
           python scripts/version.py bump patch
-          # Just create the tag locally, don't try to push to main
+          
+          # Commit version change
+          git add src/python_redis_factory/__init__.py
+          git commit -m "chore: Bump version to $(python scripts/version.py current --version-only)"
+          
+          # Create tag
           version=$(python scripts/version.py current --version-only)
           tag_name="v$version"
           git tag -a "$tag_name" -m "Release $tag_name"
           echo "Created tag $tag_name"
+          echo "TAG_CREATED=true" >> $GITHUB_ENV
         else
           echo "Not a merge from develop or manual dispatch, skipping auto-version bump"
+          echo "TAG_CREATED=false" >> $GITHUB_ENV
         fi
+      env:
+        CI: true
+
+    - name: Push tag to remote
+      if: env.TAG_CREATED == 'true'
+      run: |
+        # Get the latest tag that was created
+        tag_name=$(git describe --tags --abbrev=0)
+        echo "Pushing tag $tag_name to remote..."
+        git push origin "$tag_name"
       env:
         CI: true
 
@@ -117,6 +139,7 @@ jobs:
         skip-existing: true
 
     - name: Create Release
+      if: env.TAG_CREATED == 'true'
       uses: softprops/action-gh-release@v2
       with:
         files: |
