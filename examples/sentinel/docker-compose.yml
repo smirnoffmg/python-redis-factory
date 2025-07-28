@@ -1,13 +1,12 @@
-# Redis Sentinel with Test Container - Fixed Networking
-# This configuration includes a test container in the same network
+# Redis Sentinel Setup
+# Simple Redis Sentinel configuration with master, replicas, and sentinels
 
 services:
   redis-master:
     image: redis:7.2-alpine
     container_name: redis-master
     hostname: redis-master
-    ports:
-      - "6379:6379"
+
     command:
       [
         "redis-server",
@@ -19,8 +18,7 @@ services:
         "no"
       ]
     networks:
-      redis-net:
-        ipv4_address: 172.21.0.3
+      - redis-net
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 5s
@@ -31,8 +29,7 @@ services:
     image: redis:7.2-alpine
     container_name: redis-replica-1
     hostname: redis-replica-1
-    ports:
-      - "6380:6379"
+
     depends_on:
       - redis-master
     command:
@@ -49,8 +46,7 @@ services:
         "no"
       ]
     networks:
-      redis-net:
-        ipv4_address: 172.21.0.4
+      - redis-net
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 5s
@@ -61,8 +57,7 @@ services:
     image: redis:7.2-alpine
     container_name: redis-replica-2
     hostname: redis-replica-2
-    ports:
-      - "6381:6379"
+
     depends_on:
       - redis-master
     command:
@@ -79,8 +74,7 @@ services:
         "no"
       ]
     networks:
-      redis-net:
-        ipv4_address: 172.21.0.5
+      - redis-net
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 5s
@@ -91,8 +85,7 @@ services:
     image: redis:7.2-alpine
     container_name: redis-sentinel-1
     hostname: redis-sentinel-1
-    ports:
-      - "26379:26379"
+
     depends_on:
       - redis-master
     command: >
@@ -104,8 +97,7 @@ services:
             echo "sentinel parallel-syncs mymaster 1" >> /etc/sentinel.conf &&
             redis-server /etc/sentinel.conf --sentinel --port 26379'
     networks:
-      redis-net:
-        ipv4_address: 172.21.0.6
+      - redis-net
     healthcheck:
       test: ["CMD", "redis-cli", "-p", "26379", "--raw", "incr", "ping"]
       interval: 5s
@@ -116,8 +108,7 @@ services:
     image: redis:7.2-alpine
     container_name: redis-sentinel-2
     hostname: redis-sentinel-2
-    ports:
-      - "26380:26379"
+
     depends_on:
       - redis-master
     command: >
@@ -129,8 +120,7 @@ services:
             echo "sentinel parallel-syncs mymaster 1" >> /etc/sentinel.conf &&
             redis-server /etc/sentinel.conf --sentinel --port 26379'
     networks:
-      redis-net:
-        ipv4_address: 172.21.0.7
+      - redis-net
     healthcheck:
       test: ["CMD", "redis-cli", "-p", "26379", "--raw", "incr", "ping"]
       interval: 5s
@@ -141,8 +131,7 @@ services:
     image: redis:7.2-alpine
     container_name: redis-sentinel-3
     hostname: redis-sentinel-3
-    ports:
-      - "26381:26379"
+
     depends_on:
       - redis-master
     command: >
@@ -154,8 +143,7 @@ services:
             echo "sentinel parallel-syncs mymaster 1" >> /etc/sentinel.conf &&
             redis-server /etc/sentinel.conf --sentinel --port 26379'
     networks:
-      redis-net:
-        ipv4_address: 172.21.0.8
+      - redis-net
     healthcheck:
       test: ["CMD", "redis-cli", "-p", "26379", "--raw", "incr", "ping"]
       interval: 5s
@@ -166,7 +154,4 @@ services:
 
 networks:
   redis-net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.21.0.0/16 
+    driver: bridge 
