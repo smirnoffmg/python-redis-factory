@@ -101,21 +101,26 @@ class TestGetAsyncRedisClient:
         assert client == mock_master_client
         mock_sentinel_class.assert_called_once()
 
-    @patch("python_redis_factory.clients.cluster.redis.asyncio.Redis")
-    def test_get_async_redis_client_cluster(self, mock_redis_class):
+    @patch("python_redis_factory.clients.cluster.redis.asyncio.RedisCluster")
+    def test_get_async_redis_client_cluster(self, mock_redis_cluster_class):
         """Test creating an async Cluster Redis client through the simple API."""
         mock_redis_instance = AsyncMock()
-        mock_redis_class.return_value = mock_redis_instance
+        mock_redis_cluster_class.return_value = mock_redis_instance
 
         client = get_redis_client(
             "redis+cluster://node1:7000,node2:7001", async_client=True
         )
 
         assert client == mock_redis_instance
-        mock_redis_class.assert_called_once()
-        call_args = mock_redis_class.call_args[1]
-        assert call_args["host"] == "node1"
-        assert call_args["port"] == 7000
+        mock_redis_cluster_class.assert_called_once()
+        call_args = mock_redis_cluster_class.call_args[1]
+        assert "startup_nodes" in call_args
+        assert len(call_args["startup_nodes"]) == 2
+        # Check that ClusterNode objects were created with correct host/port
+        assert call_args["startup_nodes"][0].host == "node1"
+        assert call_args["startup_nodes"][0].port == 7000
+        assert call_args["startup_nodes"][1].host == "node2"
+        assert call_args["startup_nodes"][1].port == 7001
 
     def test_get_async_redis_client_invalid_uri(self):
         """Test that invalid URI raises ValueError."""

@@ -7,6 +7,7 @@ in both sync and async modes.
 
 import redis
 import redis.asyncio
+from redis.cluster import ClusterNode
 
 from ..interfaces import RedisConnectionConfig, RedisConnectionMode
 
@@ -47,24 +48,23 @@ class ClusterRedisClient:
         """Create a Redis Cluster connection.
 
         Returns:
-            Redis client instance configured for cluster mode (sync or async based on async_client parameter)
+            Redis Cluster client instance (sync or async based on async_client parameter)
 
         Raises:
             Exception: If connection creation fails
         """
-        # Build connection parameters using config values
+        # Parse cluster nodes into startup_nodes format
+        startup_nodes = self._parse_cluster_nodes()
+
+        # Build connection parameters
         connection_params = {
-            "host": self.config.host,
-            "port": self.config.port,
+            "startup_nodes": startup_nodes,
             "decode_responses": True,
         }
 
         # Add optional parameters if specified
         if self.config.password:
             connection_params["password"] = self.config.password
-
-        if self.config.db is not None:
-            connection_params["db"] = self.config.db
 
         if self.config.max_connections:
             connection_params["max_connections"] = self.config.max_connections
@@ -82,11 +82,30 @@ class ClusterRedisClient:
         if self.config.ssl and self.config.ssl_cert_reqs:
             connection_params["ssl_cert_reqs"] = self.config.ssl_cert_reqs
 
-        # Create appropriate Redis client
+        # Create appropriate Redis Cluster client
         if self.async_client:
-            return redis.asyncio.Redis(**connection_params)
+            return redis.asyncio.RedisCluster(**connection_params)
         else:
-            return redis.Redis(**connection_params)
+            return redis.RedisCluster(**connection_params)
+
+    def _parse_cluster_nodes(self):
+        """Parse cluster nodes from string format to startup_nodes format.
+
+        Returns:
+            List of ClusterNode objects for startup_nodes
+        """
+        # We've already validated cluster_nodes is not None in _validate_config
+        assert self.config.cluster_nodes is not None
+        startup_nodes = []
+        for node_str in self.config.cluster_nodes:
+            if ":" in node_str:
+                host, port_str = node_str.split(":", 1)
+                port = int(port_str)
+            else:
+                host = node_str
+                port = 6379
+            startup_nodes.append(ClusterNode(host, port))
+        return startup_nodes
 
     def __repr__(self) -> str:
         """Return string representation of the client."""
