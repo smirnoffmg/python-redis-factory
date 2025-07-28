@@ -11,7 +11,7 @@ from testcontainers.redis import RedisContainer
 from python_redis_factory import get_redis_client
 
 
-class TestStandaloneIntegration:
+class TestSyncStandaloneIntegration:
     """Integration tests for standalone Redis client."""
 
     @pytest.fixture
@@ -104,24 +104,25 @@ class TestStandaloneIntegration:
 
         client = get_redis_client(f"redis://{host}:{port}")
 
-        # Test operation on wrong data type
-        client.set("string_key", "value")
+        # Test invalid operations
+        client.set("string_key", "string_value")  # Set up a string key first
+        with pytest.raises(
+            Exception
+        ):  # Redis will raise an error for invalid operations
+            client.lpush("string_key", "item")  # Try to use list operation on string
 
-        # This should raise an error when trying to use list operation on string
-        with pytest.raises(Exception):  # Redis will raise a specific error
-            client.lpush("string_key", "item")
+        # Test operations on non-existent keys
+        assert client.get("non_existent_key") is None
+        assert client.exists("non_existent_key") == 0
 
     def test_standalone_performance_basic(self, redis_container):
-        """Test basic performance with multiple operations."""
+        """Test basic performance characteristics."""
         host = redis_container.get_container_host_ip()
         port = redis_container.get_exposed_port(6379)
 
         client = get_redis_client(f"redis://{host}:{port}")
 
-        # Perform multiple operations
+        # Test multiple operations in sequence
         for i in range(100):
-            client.set(f"perf_key_{i}", f"perf_value_{i}")
-
-        # Verify all operations worked
-        for i in range(100):
-            assert client.get(f"perf_key_{i}") == f"perf_value_{i}"
+            client.set(f"perf_key_{i}", f"value_{i}")
+            assert client.get(f"perf_key_{i}") == f"value_{i}"

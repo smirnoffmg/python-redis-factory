@@ -47,6 +47,7 @@ path = "src/python_redis_factory/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/python_redis_factory"]
+include = ["src/python_redis_factory/py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

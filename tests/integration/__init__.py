@@ -1,1 +1,1 @@
-# Integration tests package for python-redis-factory
+"""Integration tests for python-redis-factory."""

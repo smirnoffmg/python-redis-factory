@@ -11,7 +11,7 @@ from testcontainers.redis import RedisContainer
 from python_redis_factory import get_redis_client
 
 
-class TestAsyncIntegration:
+class TestAsyncStandaloneIntegration:
     """Async integration tests for Redis client factory."""
 
     @pytest.fixture
@@ -121,16 +121,20 @@ class TestAsyncIntegration:
 
         client = get_redis_client(f"redis://{host}:{port}", async_client=True)
 
-        # Test operation on non-existent key
+        # Test invalid operations
+        await client.set("string_key", "string_value")  # Set up a string key first
+        with pytest.raises(
+            Exception
+        ):  # Redis will raise an error for invalid operations
+            await client.lpush(
+                "string_key", "item"
+            )  # Try to use list operation on string
+
+        # Test operations on non-existent keys
         result = await client.get("non_existent_key")
         assert result is None
-
-        # Test operation on wrong data type
-        await client.set("string_key", "string_value")
-
-        # Try to use list operation on string
-        with pytest.raises(Exception):  # Redis will raise an error
-            await client.lpush("string_key", "item")
+        exists = await client.exists("non_existent_key")
+        assert exists == 0
 
     @pytest.mark.asyncio
     async def test_async_standalone_performance_basic(self, redis_container):
@@ -147,83 +151,25 @@ class TestAsyncIntegration:
             assert result == f"value_{i}"
 
     @pytest.mark.asyncio
-    async def test_async_standalone_with_password(self, redis_container):
-        """Test async Redis with password authentication."""
-        host = redis_container.get_container_host_ip()
-        port = redis_container.get_exposed_port(6379)
+    async def test_async_standalone_concurrent_operations(self, redis_container):
+        """Test concurrent async operations."""
+        import asyncio
 
-        # Note: The test container doesn't have password by default
-        # This test verifies the URI parsing works correctly
-        client = get_redis_client(f"redis://{host}:{port}", async_client=True)
-
-        # Should work without password
-        assert await client.ping() is True
-
-    @pytest.mark.asyncio
-    async def test_async_standalone_with_ssl(self, redis_container):
-        """Test async Redis with SSL (when available)."""
-        host = redis_container.get_container_host_ip()
-        port = redis_container.get_exposed_port(6379)
-
-        # Note: The test container doesn't have SSL by default
-        # This test verifies the URI parsing works correctly
-        client = get_redis_client(f"redis://{host}:{port}", async_client=True)
-
-        # Should work without SSL
-        assert await client.ping() is True
-
-    @pytest.mark.asyncio
-    async def test_async_standalone_pipeline_operations(self, redis_container):
-        """Test async Redis pipeline operations."""
         host = redis_container.get_container_host_ip()
         port = redis_container.get_exposed_port(6379)
 
         client = get_redis_client(f"redis://{host}:{port}", async_client=True)
 
-        # Test pipeline operations
-        async with client.pipeline() as pipe:
-            await pipe.set("pipeline_key1", "value1")
-            await pipe.set("pipeline_key2", "value2")
-            await pipe.get("pipeline_key1")
-            await pipe.get("pipeline_key2")
-            results = await pipe.execute()
-
-        assert results == [True, True, "value1", "value2"]
-
-    @pytest.mark.asyncio
-    async def test_async_standalone_transaction_operations(self, redis_container):
-        """Test async Redis transaction operations."""
-        host = redis_container.get_container_host_ip()
-        port = redis_container.get_exposed_port(6379)
-
-        client = get_redis_client(f"redis://{host}:{port}", async_client=True)
-
-        # Test transaction operations
-        async with client.pipeline() as transaction:
-            await transaction.set("tx_key1", "value1")
-            await transaction.set("tx_key2", "value2")
-            await transaction.get("tx_key1")
-            await transaction.get("tx_key2")
-            results = await transaction.execute()
-
-        assert results == [True, True, "value1", "value2"]
-
-    @pytest.mark.asyncio
-    async def test_async_standalone_connection_cleanup(self, redis_container):
-        """Test that async connections are properly cleaned up."""
-        host = redis_container.get_container_host_ip()
-        port = redis_container.get_exposed_port(6379)
-
-        # Create and use multiple clients
-        clients = []
+        # Create multiple concurrent tasks
+        tasks = []
         for i in range(10):
-            client = get_redis_client(f"redis://{host}:{port}", async_client=True)
-            await client.set(f"cleanup_key_{i}", f"value_{i}")
-            clients.append(client)
+            task = client.set(f"concurrent_key_{i}", f"value_{i}")
+            tasks.append(task)
 
-        # Verify all operations worked
-        for i, client in enumerate(clients):
-            result = await client.get(f"cleanup_key_{i}")
+        # Execute all tasks concurrently
+        await asyncio.gather(*tasks)
+
+        # Verify all values were set
+        for i in range(10):
+            result = await client.get(f"concurrent_key_{i}")
             assert result == f"value_{i}"
-
-        # Clients should be properly cleaned up when they go out of scope

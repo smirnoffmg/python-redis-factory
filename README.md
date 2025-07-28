@@ -73,6 +73,7 @@ make help
 
 ## Documentation
 
+- [Examples](examples/) - Comprehensive examples with Docker Compose
 - [Release Guide](docs/RELEASE.md) - How to make releases
 - [Release Checklist](docs/RELEASE_CHECKLIST.md) - Pre-release checklist
 
