@@ -1,6 +1,6 @@
 # Release Guide
 
-This document explains how to release new versions of `python-redis-factory` to PyPI. The project supports both automated and manual release workflows.
+This document explains how to release new versions of `python-redis-factory` to PyPI. The project uses a **manual release workflow** from the main branch.
 
 ## Quick Release Commands
 
@@ -14,38 +14,11 @@ make release-minor  # 0.1.0 -> 0.2.0 (new features)
 make release-major  # 0.1.0 -> 1.0.0 (breaking changes)
 ```
 
-## Release Workflows
+## Release Workflow
 
-### Option 1: Automated Release (Recommended)
+### Manual Release via GitHub Actions (Recommended)
 
-The project uses GitHub Actions for automated releases. When you push to the `main` branch, it automatically:
-
-1. **Runs quality checks** (tests, linting, type checking)
-2. **Bumps version** (patch increment for merges)
-3. **Creates git tag**
-4. **Builds package**
-5. **Publishes to PyPI**
-6. **Creates GitHub release**
-
-#### Automated Release Process
-
-```bash
-# 1. Ensure all changes are committed and pushed to main
-git add .
-git commit -m "feat: Add new feature"
-git push origin main
-
-# 2. GitHub Actions automatically handles the rest!
-# - Runs CI checks
-# - Bumps version (patch)
-# - Creates tag
-# - Publishes to PyPI
-# - Creates release
-```
-
-### Option 2: Manual Release via GitHub Actions
-
-For more control over version bumping:
+The project uses GitHub Actions for manual releases. This provides full control over when and how releases are made:
 
 1. **Go to GitHub Actions** in your repository
 2. **Select the "Release" workflow**
@@ -55,9 +28,17 @@ For more control over version bumping:
    - **Release type**: Choose `patch`, `minor`, or `major` (used when version is `0.1.0`)
 5. **Click "Run workflow"**
 
+The workflow will:
+- ✅ Run quality checks (tests, linting, type checking)
+- ✅ Bump version automatically
+- ✅ Create git tag
+- ✅ Build package
+- ✅ Publish to PyPI
+- ✅ Create GitHub release
+
 **Note**: If you enter a specific version (not `0.1.0`), it will set that exact version. If you leave it as `0.1.0`, it will bump the current version based on the release type.
 
-### Option 3: Manual Release (Local)
+### Manual Release (Local)
 
 For complete manual control:
 
@@ -143,20 +124,23 @@ git pull origin main
 make ci
 ```
 
-### Step 2: Choose Release Type
+### Step 2: Trigger Manual Release
 
-**For bug fixes and minor updates:**
+**Option A: GitHub Actions (Recommended)**
+1. Go to GitHub Actions → Release workflow
+2. Click "Run workflow"
+3. Choose version and release type
+4. Click "Run workflow"
+
+**Option B: Local Commands**
 ```bash
+# For bug fixes and minor updates
 make release-patch
-```
 
-**For new features:**
-```bash
+# For new features
 make release-minor
-```
 
-**For breaking changes:**
-```bash
+# For breaking changes
 make release-major
 ```
 
@@ -180,7 +164,7 @@ After the release process completes:
 
 The `.github/workflows/release.yml` workflow:
 
-1. **Triggers on**: Push to `main` branch or manual workflow dispatch
+1. **Triggers on**: Manual workflow dispatch only
 2. **Runs on**: Ubuntu latest
 3. **Steps**:
    - Setup Python 3.12 and uv
@@ -189,7 +173,7 @@ The `.github/workflows/release.yml` workflow:
    - Upload coverage to Codecov
    - Run linting and type checking
    - Build package
-   - Auto-bump version and create tag (for merges)
+   - Bump version and create tag
    - Publish to PyPI
    - Create GitHub release
 
