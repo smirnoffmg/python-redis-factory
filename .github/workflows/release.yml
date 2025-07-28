@@ -19,7 +19,6 @@ on:
 
 permissions:
   contents: write
-  packages: write
 
 jobs:
   release:
@@ -96,6 +95,12 @@ jobs:
           echo "New version: $version"
         done
         
+        # Validate version format
+        if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+          echo "Error: Invalid version format: $version"
+          exit 1
+        fi
+        
         # Commit version change
         git add src/python_redis_factory/__init__.py
         git commit -m "chore: Bump version to $version" || echo "No changes to commit"
@@ -104,6 +109,8 @@ jobs:
         git tag -a "$tag_name" -m "Release $tag_name"
         echo "Created tag $tag_name"
         echo "TAG_CREATED=true" >> $GITHUB_ENV
+        echo "VERSION=$version" >> $GITHUB_ENV
+        echo "TAG_NAME=$tag_name" >> $GITHUB_ENV
       env:
         CI: true
 
@@ -118,8 +125,8 @@ jobs:
 
     - name: Push tag to remote
       run: |
-        # Get the latest tag that was created
-        tag_name=$(git describe --tags --abbrev=0)
+        # Use the tag name from the previous step
+        tag_name="${{ env.TAG_NAME }}"
         echo "Pushing tag $tag_name to remote..."
         
         # Try to push the tag, with retry logic
@@ -150,14 +157,4 @@ jobs:
         password: ${{ secrets.PYPI_API_TOKEN }}
         skip-existing: true
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          dist/*.whl
-          dist/*.tar.gz
-        generate_release_notes: true
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+ 
