@@ -8,77 +8,69 @@ single Redis instances in both sync and async modes.
 import redis
 import redis.asyncio
 
-from ..interfaces import RedisConnectionConfig, RedisConnectionMode
+from ..interfaces import RedisClient, RedisConnectionConfig, RedisConnectionMode
 
 
 class StandaloneRedisClient:
-    """Client for connecting to standalone Redis instances in sync or async mode."""
+    """A builder for creating standalone Redis clients."""
 
-    def __init__(self, config: RedisConnectionConfig, async_client: bool = False):
+    @staticmethod
+    async def create(
+        config: RedisConnectionConfig, async_client: bool = False
+    ) -> RedisClient:
         """
-        Initialize the standalone Redis client.
+        Create a Redis connection based on the configuration.
 
         Args:
-            config: Redis connection configuration
-            async_client: If True, creates async Redis client. If False, creates sync client.
+            config: Redis connection configuration.
+            async_client: If True, creates an async Redis client.
+
+        Returns:
+            A Redis client instance.
 
         Raises:
-            ValueError: If configuration mode is not STANDALONE
+            ValueError: If the configuration mode is not STANDALONE.
+            redis.ConnectionError: If the connection cannot be established.
         """
         if config.mode != RedisConnectionMode.STANDALONE:
             raise ValueError("Configuration must be for STANDALONE mode")
 
-        self.config = config
-        self.async_client = async_client
-
-    def create_connection(self):
-        """
-        Create a Redis connection based on the configuration.
-
-        Returns:
-            Redis client instance (sync or async based on async_client parameter)
-
-        Raises:
-            redis.ConnectionError: If connection cannot be established
-        """
         # Build connection parameters
         connection_params = {
-            "host": self.config.host,
-            "port": self.config.port,
+            "host": config.host,
+            "port": config.port,
             "decode_responses": True,
         }
 
         # Add optional parameters (include None values for testing consistency)
-        connection_params["password"] = self.config.password
+        connection_params["password"] = config.password
 
-        if self.config.db is not None:
-            connection_params["db"] = self.config.db
+        if config.db is not None:
+            connection_params["db"] = config.db
 
-        if self.config.max_connections:
-            connection_params["max_connections"] = self.config.max_connections
+        if config.max_connections:
+            connection_params["max_connections"] = config.max_connections
 
-        if self.config.socket_timeout:
-            connection_params["socket_timeout"] = self.config.socket_timeout
+        if config.socket_timeout:
+            connection_params["socket_timeout"] = config.socket_timeout
 
-        if self.config.socket_connect_timeout:
+        if config.socket_connect_timeout:
             connection_params["socket_connect_timeout"] = (
-                self.config.socket_connect_timeout
+                config.socket_connect_timeout
             )
 
-        # Always set SSL parameters explicitly
-        connection_params["ssl"] = self.config.ssl or False
-        if self.config.ssl and self.config.ssl_cert_reqs:
-            connection_params["ssl_cert_reqs"] = self.config.ssl_cert_reqs
-        if self.config.ssl and self.config.ssl_ca_certs:
-            connection_params["ssl_ca_certs"] = self.config.ssl_ca_certs
+        # SSL parameters
+        if config.ssl:
+            connection_params["ssl"] = True
+            if config.ssl_cert_reqs:
+                connection_params["ssl_cert_reqs"] = config.ssl_cert_reqs
+            if config.ssl_ca_certs:
+                connection_params["ssl_ca_certs"] = config.ssl_ca_certs
 
         # Create appropriate Redis client
-        if self.async_client:
-            return redis.asyncio.Redis(**connection_params)
+        if async_client:
+            return redis.asyncio.Redis.from_pool(
+                redis.asyncio.ConnectionPool(**connection_params)
+            )
         else:
-            return redis.Redis(**connection_params)
-
-    def __repr__(self) -> str:
-        """Return string representation of the client."""
-        mode = "Async" if self.async_client else "Sync"
-        return f"{mode}StandaloneRedisClient({self.config.host}:{self.config.port}, mode=STANDALONE)"
+            return redis.Redis.from_pool(redis.ConnectionPool(**connection_params))
