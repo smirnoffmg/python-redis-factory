@@ -5,15 +5,27 @@ This module provides a simplified interface for creating Redis clients
 with minimal configuration.
 """
 
-from typing import Any
-
 from .clients.cluster import ClusterRedisClient
 from .clients.sentinel import SentinelRedisClient
 from .clients.standalone import StandaloneRedisClient
+from .factory import RedisClientFactory
+from .interfaces import RedisClient, RedisConnectionMode
 from .uri_parser import parse_redis_uri
 
+# Global factory instance
+_redis_client_factory = RedisClientFactory()
+_redis_client_factory.register_builder(
+    RedisConnectionMode.STANDALONE, StandaloneRedisClient.create
+)
+_redis_client_factory.register_builder(
+    RedisConnectionMode.SENTINEL, SentinelRedisClient.create
+)
+_redis_client_factory.register_builder(
+    RedisConnectionMode.CLUSTER, ClusterRedisClient.create
+)
 
-def get_redis_client(redis_dsn: str, async_client: bool = False) -> Any:
+
+def get_redis_client(redis_dsn: str, async_client: bool = False) -> RedisClient:
     """
     Create a Redis client from a connection string.
 
@@ -60,20 +72,12 @@ def get_redis_client(redis_dsn: str, async_client: bool = False) -> Any:
     if not redis_dsn:
         raise ValueError("Invalid Redis URI format")
 
-    # Parse the URI into a configuration
     config = parse_redis_uri(redis_dsn)
-
-    # Create and return the appropriate client directly
-    if config.mode.value == "standalone":
-        standalone_client = StandaloneRedisClient(config, async_client=async_client)
-        return standalone_client.create_connection()
-    elif config.mode.value == "sentinel":
-        sentinel_client = SentinelRedisClient(config, async_client=async_client)
-        return sentinel_client.create_connection()
-    elif config.mode.value == "cluster":
-        cluster_client = ClusterRedisClient(config, async_client=async_client)
-        return cluster_client.create_connection()
+    if async_client:
+        return _redis_client_factory.create_client(config, async_client=True)
     else:
-        raise NotImplementedError(
-            f"Client creation for {config.mode} mode not yet implemented"
+        import asyncio
+
+        return asyncio.run(
+            _redis_client_factory.create_client(config, async_client=False)
         )

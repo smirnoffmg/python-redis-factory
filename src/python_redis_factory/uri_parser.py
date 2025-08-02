@@ -5,7 +5,7 @@ This module provides functionality to parse Redis URIs and convert them
 into RedisConnectionConfig objects.
 """
 
-from typing import List
+from typing import List, Optional, Tuple
 from urllib.parse import ParseResult, urlparse
 
 from .interfaces import RedisConnectionConfig, RedisConnectionMode
@@ -33,17 +33,14 @@ def parse_redis_uri(uri: str) -> RedisConnectionConfig:
     if not uri:
         raise ValueError("URI cannot be empty")
 
-    # Parse the URI
     try:
         parsed = urlparse(uri)
     except Exception:
         raise ValueError("Invalid Redis URI format")
 
-    # Validate basic URI structure
     if not parsed.scheme:
         raise ValueError("Invalid Redis URI format")
 
-    # Determine connection mode and validate scheme
     mode = _determine_connection_mode(parsed.scheme)
 
     if mode == RedisConnectionMode.STANDALONE:
@@ -72,31 +69,22 @@ def _determine_connection_mode(scheme: str) -> RedisConnectionMode:
 
 def _parse_standalone_uri(parsed: ParseResult) -> RedisConnectionConfig:
     """Parse a standalone Redis URI."""
-    # Extract host and port
     host = parsed.hostname or "localhost"
-
-    # Handle port validation
     try:
         port = parsed.port or 6379
     except ValueError:
         raise ValueError("Invalid port number")
 
-    # Extract authentication
-    password = None
-    if parsed.password:
-        password = parsed.password
-
-    # Extract database number
+    password = parsed.password
     db = 0
     if parsed.path and len(parsed.path) > 1:
         try:
-            db = int(parsed.path[1:])  # Remove leading '/'
+            db = int(parsed.path[1:])
             if db < 0:
                 raise ValueError("Invalid database number")
         except ValueError:
             raise ValueError("Invalid database number")
 
-    # Determine if SSL is enabled
     ssl = parsed.scheme == "rediss"
 
     return RedisConnectionConfig(
@@ -106,28 +94,20 @@ def _parse_standalone_uri(parsed: ParseResult) -> RedisConnectionConfig:
         db=db,
         mode=RedisConnectionMode.STANDALONE,
         ssl=ssl,
+        ssl_cert_reqs="required" if ssl else None,
     )
 
 
 def _parse_sentinel_uri(parsed: ParseResult) -> RedisConnectionConfig:
     """Parse a Sentinel Redis URI."""
-    # Extract sentinel hosts from netloc
-    sentinel_hosts = _parse_host_list(parsed.netloc)
+    password, sentinel_hosts = _parse_netloc_for_password_and_hosts(parsed.netloc)
     if not sentinel_hosts:
         raise ValueError("Sentinel URI must include at least one sentinel host")
 
-    # Extract service name from path
     if not parsed.path or len(parsed.path) <= 1:
         raise ValueError("Sentinel URI must include service name")
 
-    service_name = parsed.path[1:]  # Remove leading '/'
-
-    # Extract password if present
-    password = None
-    if parsed.password:
-        password = parsed.password
-
-    # Use first sentinel as default host/port
+    service_name = parsed.path[1:]
     first_sentinel = sentinel_hosts[0]
     host, port = _parse_host_port(first_sentinel)
 
@@ -144,17 +124,10 @@ def _parse_sentinel_uri(parsed: ParseResult) -> RedisConnectionConfig:
 
 def _parse_cluster_uri(parsed: ParseResult) -> RedisConnectionConfig:
     """Parse a Cluster Redis URI."""
-    # Extract cluster nodes from netloc
-    cluster_nodes = _parse_host_list(parsed.netloc)
+    password, cluster_nodes = _parse_netloc_for_password_and_hosts(parsed.netloc)
     if not cluster_nodes:
         raise ValueError("Cluster URI must include at least one node")
 
-    # Extract password if present
-    password = None
-    if parsed.password:
-        password = parsed.password
-
-    # Use first node as default host/port
     first_node = cluster_nodes[0]
     host, port = _parse_host_port(first_node)
 
@@ -167,16 +140,21 @@ def _parse_cluster_uri(parsed: ParseResult) -> RedisConnectionConfig:
     )
 
 
-def _parse_host_list(netloc: str) -> List[str]:
-    """Parse a comma-separated list of hosts from netloc."""
-    if not netloc:
-        return []
-
-    # Remove authentication part if present
+def _parse_netloc_for_password_and_hosts(
+    netloc: str,
+) -> Tuple[Optional[str], List[str]]:
+    """
+    Parse a netloc string to extract an optional password and a list of hosts.
+    """
+    password = None
+    hosts_str = netloc
     if "@" in netloc:
-        netloc = netloc.split("@", 1)[1]
+        auth_part, hosts_str = netloc.split("@", 1)
+        if auth_part.startswith(":"):
+            password = auth_part[1:]
 
-    return [host.strip() for host in netloc.split(",") if host.strip()]
+    hosts = [h.strip() for h in hosts_str.split(",") if h.strip()]
+    return password, hosts
 
 
 def _parse_host_port(host_port: str) -> tuple[str, int]:

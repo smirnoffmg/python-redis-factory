@@ -49,6 +49,7 @@ class TestRedisConnectionConfig:
             socket_timeout=10.0,
             socket_connect_timeout=3.0,
             ssl=True,
+            ssl_cert_reqs="required",
         )
 
         assert config.host == "redis.example.com"

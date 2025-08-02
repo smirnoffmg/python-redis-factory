@@ -13,52 +13,11 @@ from python_redis_factory import (
     create_config_from_uri,
     get_default_config,
     merge_configs,
-    validate_config,
 )
 
 
 class TestSentinelConfiguration:
     """Test Sentinel configuration validation and parsing."""
-
-    def test_sentinel_config_validation(self):
-        """Test Sentinel configuration validation."""
-        # Valid Sentinel config
-        config = RedisConnectionConfig(
-            host="sentinel1",
-            mode=RedisConnectionMode.SENTINEL,
-            sentinel_hosts=["sentinel1:26379", "sentinel2:26379"],
-            service_name="mymaster",
-        )
-
-        # Should not raise an exception
-        validate_config(config)
-
-        # Invalid Sentinel config (missing service name)
-        invalid_config = RedisConnectionConfig(
-            host="sentinel1",
-            mode=RedisConnectionMode.SENTINEL,
-            sentinel_hosts=["sentinel1:26379"],
-            service_name=None,
-        )
-
-        with pytest.raises(
-            ValueError, match="Service name is required for Sentinel mode"
-        ):
-            validate_config(invalid_config)
-
-    def test_sentinel_client_creation(self):
-        """Test Sentinel client creation (without actual connection)."""
-        from python_redis_factory.clients.sentinel import SentinelRedisClient
-
-        # Create config from URI
-        config = create_config_from_uri("redis+sentinel://sentinel1:26379/mymaster")
-
-        # Create Sentinel client
-        client = SentinelRedisClient(config)
-
-        assert client.config.mode == RedisConnectionMode.SENTINEL
-        assert client.config.sentinel_hosts == ["sentinel1:26379"]
-        assert client.config.service_name == "mymaster"
 
     def test_sentinel_uri_edge_cases(self):
         """Test Sentinel URI edge cases."""

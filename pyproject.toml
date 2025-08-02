@@ -56,7 +56,7 @@ pythonpath = ["src"]
 # Use auto to automatically detect number of CPU cores
 # Use specific number like 4 for fixed number of workers
 # Use 0 to disable parallel execution
-addopts = "-v --strict-markers -n auto"
+addopts = "-v --strict-markers"
 markers = [
     "unit: Unit tests (fast, no external dependencies)",
     "integration: Integration tests (use external services)",

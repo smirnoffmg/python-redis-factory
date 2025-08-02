@@ -7,7 +7,19 @@ the redis factory implementation.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Optional, Union
+
+import redis
+import redis.asyncio
+from redis.asyncio.cluster import RedisCluster as AsyncRedisCluster
+from redis.cluster import RedisCluster
+
+RedisClient = Union[
+    redis.Redis,
+    redis.asyncio.Redis,
+    RedisCluster,
+    AsyncRedisCluster,
+]
 
 
 class RedisConnectionMode(Enum):
@@ -48,6 +60,9 @@ class RedisConnectionConfig:
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
+        if not self.host or not self.host.strip():
+            raise ValueError("Host cannot be empty")
+
         if self.port < 1 or self.port > 65535:
             raise ValueError("Port must be between 1 and 65535")
 
@@ -62,3 +77,8 @@ class RedisConnectionConfig:
 
         if self.socket_connect_timeout < 0:
             raise ValueError("Socket connect timeout must be non-negative")
+
+        if self.ssl and self.ssl_cert_reqs is None:
+            raise ValueError(
+                "SSL certificate requirements must be specified when SSL is enabled"
+            )
